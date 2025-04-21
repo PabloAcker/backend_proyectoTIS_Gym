@@ -1,17 +1,21 @@
 const express = require('express');
 const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
 const app = express();
-const prisma = new PrismaClient();
-
 app.use(cors());
 app.use(express.json());
 
+// Importar rutas
+const userRoutes = require('./routes/user.routes');
+
+// Ruta de prueba
 app.get('/', (req, res) => {
   res.send('API del Gimnasio funcionando 🏋️‍♂️');
 });
+
+// Usar rutas de usuarios
+app.use('/users', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
