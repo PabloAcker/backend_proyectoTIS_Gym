@@ -21,3 +21,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
+
+//clients
+const clientRoutes = require('./routes/client.routes');
+app.use('/clients', clientRoutes);
+

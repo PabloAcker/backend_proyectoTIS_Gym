@@ -66,12 +66,25 @@ model users {
   status      Boolean?      @default(true)
   created_at  DateTime?     @default(now()) @db.Timestamp(0)
   updated_at  DateTime?     @default(now()) @db.Timestamp(0)
+
   memberships memberships[]
   rfid_access rfid_access[]
+  client      clients?      @relation("UserClient")  // relación 1:1
 }
+
 
 enum users_role {
   admin
   empleado
   cliente
 }
+
+model clients {
+  id        Int      @id @default(autoincrement())
+  user_id   Int      @unique
+  ci        String
+  birthdate DateTime?
+
+  user users @relation("UserClient", fields: [user_id], references: [id], onDelete: Cascade)
+}
+
