@@ -26,3 +26,7 @@ app.listen(PORT, () => {
 const clientRoutes = require('./routes/client.routes');
 app.use('/clients', clientRoutes);
 
+//memberships
+const membershipRoutes = require('./routes/membership.routes');
+app.use('/memberships', membershipRoutes);
+
