@@ -41,7 +41,32 @@ const getAllMemberships = async (req, res) => {
     }
   };
 
-module.exports = {
-  createMembership,
-  getAllMemberships
-};
+  const deleteMembership = async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      // Verificar si hay suscripciones con este plan
+      const hasSubscriptions = await prisma.subscriptions.findFirst({
+        where: { membership_id: Number(id) }
+      });
+  
+      if (hasSubscriptions) {
+        return res.status(403).json({ error: 'No se puede eliminar: este plan tiene suscripciones activas' });
+      }
+  
+      const deleted = await prisma.memberships.delete({
+        where: { id: Number(id) }
+      });
+  
+      res.json({ message: 'Membresía eliminada correctamente', membership: deleted });
+    } catch (error) {
+      console.error('Error al eliminar membresía:', error);
+      res.status(500).json({ error: 'Error interno al eliminar la membresía' });
+    }
+  };  
+
+  module.exports = {
+    createMembership,
+    getAllMemberships,
+    deleteMembership
+  };  

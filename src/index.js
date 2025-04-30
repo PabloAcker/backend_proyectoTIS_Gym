@@ -30,3 +30,7 @@ app.use('/clients', clientRoutes);
 const membershipRoutes = require('./routes/membership.routes');
 app.use('/memberships', membershipRoutes);
 
+// subscriptions
+const subscriptionRoutes = require('./routes/subscription.routes');
+app.use('/subscriptions', subscriptionRoutes);
+
