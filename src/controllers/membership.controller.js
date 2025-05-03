@@ -27,19 +27,19 @@ const createMembership = async (req, res) => {
 };
 
 const getAllMemberships = async (req, res) => {
-    try {
-      const memberships = await prisma.memberships.findMany({
-        where: {
-          user_id: null // 📌 Mostramos solo los planes generales, no asignaciones
-        }
-      });
-  
-      res.json(memberships);
-    } catch (error) {
-      console.error('Error al obtener las membresías:', error);
-      res.status(500).json({ error: 'Error interno al obtener las membresías' });
-    }
-  };
+  try {
+    const memberships = await prisma.memberships.findMany({
+      where: {
+        status: true // si quieres filtrar solo activos
+      }
+    });
+
+    res.json(memberships);
+  } catch (error) {
+    console.error('Error al obtener las membresías:', error);
+    res.status(500).json({ error: 'Error interno al obtener las membresías' });
+  }
+};
 
   const deleteMembership = async (req, res) => {
     const { id } = req.params;
