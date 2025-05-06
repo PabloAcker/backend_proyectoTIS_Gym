@@ -65,8 +65,30 @@ const getAllMemberships = async (req, res) => {
     }
   };  
 
+  const getMembershipById = async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const membership = await prisma.memberships.findUnique({
+        where: {
+          id: Number(id)
+        }
+      });
+  
+      if (!membership) {
+        return res.status(404).json({ error: 'Membresía no encontrada' });
+      }
+  
+      res.json(membership);
+    } catch (error) {
+      console.error('Error al obtener la membresía:', error);
+      res.status(500).json({ error: 'Error interno al obtener la membresía' });
+    }
+  };  
+
   module.exports = {
     createMembership,
     getAllMemberships,
+    getMembershipById,
     deleteMembership
   };  
