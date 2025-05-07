@@ -34,3 +34,8 @@ app.use('/memberships', membershipRoutes);
 const subscriptionRoutes = require('./routes/subscription.routes');
 app.use('/subscriptions', subscriptionRoutes);
 
+// auth
+const authRoutes = require('./routes/auth.routes');
+app.use('/auth', authRoutes);
+
+
