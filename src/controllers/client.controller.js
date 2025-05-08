@@ -59,14 +59,63 @@ const getAllClients = async (req, res) => {
       }
     });
 
-    res.json(clients);
+// Mapea para que el frontend reciba los datos planos
+const formatted = clients.map((c) => ({
+  id: c.id,
+  ci: c.ci,
+  birthdate: c.birthdate,
+  name: c.user?.name || "",
+  lastname: c.user?.lastname || "",
+  email: c.user?.email || "",
+}));
+
+res.json(formatted);
+} catch (error) {
+console.error("Error al obtener clientes:", error);
+res.status(500).json({ error: "Error al obtener clientes" });
+}
+};
+
+const updateClient = async (req, res) => {
+  const { id } = req.params;
+  const { ci, birthdate, name, lastname, email } = req.body;
+
+  try {
+    const client = await prisma.clients.findUnique({
+      where: { id: Number(id) },
+      include: { user: true },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Actualizar ambos: cliente y su usuario asociado
+    const updatedClient = await prisma.clients.update({
+      where: { id: Number(id) },
+      data: {
+        ci,
+        birthdate: new Date(birthdate),
+        user: {
+          update: {
+            name,
+            lastname,
+            email,
+          },
+        },
+      },
+      include: { user: true },
+    });
+
+    res.json(updatedClient);
   } catch (error) {
-    console.error('Error al obtener clientes:', error);
-    res.status(500).json({ error: 'Error al obtener los clientes' });
+    console.error("Error al actualizar cliente:", error);
+    res.status(500).json({ error: "Error al actualizar cliente" });
   }
 };
 
 module.exports = {
   createClient,
-  getAllClients
+  getAllClients,
+  updateClient
 };
