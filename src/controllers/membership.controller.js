@@ -84,11 +84,46 @@ const getAllMemberships = async (req, res) => {
       console.error('Error al obtener la membresía:', error);
       res.status(500).json({ error: 'Error interno al obtener la membresía' });
     }
-  };  
+  };
 
-  module.exports = {
-    createMembership,
-    getAllMemberships,
-    getMembershipById,
-    deleteMembership
-  };  
+  const updateMembership = async (req, res) => {
+  const { id } = req.params;
+  const { name, description, duration, price, status } = req.body;
+
+  try {
+    const existing = await prisma.memberships.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Membresía no encontrada' });
+    }
+
+    const updated = await prisma.memberships.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        description,
+        duration,
+        price,
+        status
+      }
+    });
+
+    res.json({
+      message: 'Membresía actualizada correctamente',
+      membership: updated
+    });
+  } catch (error) {
+    console.error('Error al actualizar la membresía:', error);
+    res.status(500).json({ error: 'Error interno al actualizar la membresía' });
+  }
+};
+
+module.exports = {
+  createMembership,
+  getAllMemberships,
+  getMembershipById,
+  deleteMembership,
+  updateMembership
+}; 

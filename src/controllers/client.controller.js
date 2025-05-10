@@ -114,8 +114,40 @@ const updateClient = async (req, res) => {
   }
 };
 
+const deleteClient = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verificar si el cliente existe
+    const client = await prisma.clients.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Eliminar cliente y usuario en transacción
+    await prisma.$transaction(async (tx) => {
+      await tx.clients.delete({
+        where: { id: Number(id) }
+      });
+
+      await tx.users.delete({
+        where: { id: client.user_id }
+      });
+    });
+
+    res.json({ message: "Cliente eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar cliente:", error);
+    res.status(500).json({ error: "Error al eliminar cliente" });
+  }
+};
+
 module.exports = {
   createClient,
   getAllClients,
-  updateClient
+  updateClient,
+  deleteClient
 };
