@@ -99,9 +99,39 @@ const getPendingSubscriptions = async (req, res) => {
     }
   };  
 
+// GET /subscriptions/user/:userId → Obtener suscripción activa o pendiente de un cliente
+const getSubscriptionByUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const subscription = await prisma.subscriptions.findFirst({
+      where: {
+        user_id: Number(userId),
+        state: { in: ['pendiente', 'aprobado'] }
+      },
+      include: {
+        membership: true
+      },
+      orderBy: {
+        start_date: 'desc'
+      }
+    });
+
+    if (!subscription) {
+      return res.json(null); // el cliente aún no tiene suscripción activa o pendiente
+    }
+
+    res.json(subscription);
+  } catch (error) {
+    console.error('Error al obtener la suscripción del cliente:', error);
+    res.status(500).json({ error: 'Error interno al obtener la suscripción del cliente' });
+  }
+};
+
   module.exports = {
     requestSubscription,
     getPendingSubscriptions,
     approveSubscription,
-    rejectSubscription
+    rejectSubscription,
+    getSubscriptionByUser
   };  

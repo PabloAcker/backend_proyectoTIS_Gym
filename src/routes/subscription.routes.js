@@ -4,7 +4,8 @@ const {
   requestSubscription,
   getPendingSubscriptions,
   approveSubscription,
-  rejectSubscription
+  rejectSubscription,
+  getSubscriptionByUser
 } = require('../controllers/subscription.controller');
 
 // Solicitud de membresía
@@ -12,6 +13,8 @@ router.post('/', requestSubscription);
 
 // Ver solicitudes pendientes
 router.get('/pending', getPendingSubscriptions);
+
+router.get('/user/:userId', getSubscriptionByUser);
 
 // Aprobar / Rechazar
 router.put('/:id/approve', approveSubscription);

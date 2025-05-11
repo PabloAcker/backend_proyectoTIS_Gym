@@ -27,23 +27,25 @@ const createQr = async (req, res) => {
   }
 };
 
-// GET /qrs → Listar todos los QRs
-const getAllQrs = async (req, res) => {
+// GET /qrs → Devolver solo el QR más reciente
+const getLatestQr = async (req, res) => {
   try {
-    const qrs = await prisma.qrs.findMany({
-      orderBy: {
-        generated_at: 'desc'
-      }
+    const latest = await prisma.qrs.findFirst({
+      orderBy: { generated_at: 'desc' }
     });
 
-    res.json(qrs);
+    if (!latest) {
+      return res.status(404).json({ error: "No hay códigos QR aún" });
+    }
+
+    res.json(latest); // Devuelve un objeto, no un array
   } catch (error) {
-    console.error('Error al obtener QRs:', error);
-    res.status(500).json({ error: 'Error interno al obtener los QRs' });
+    console.error("Error al obtener QR:", error);
+    res.status(500).json({ error: "Error interno al obtener QR" });
   }
 };
 
 module.exports = {
   createQr,
-  getAllQrs
+  getLatestQr
 };
