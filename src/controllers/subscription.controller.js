@@ -49,55 +49,78 @@ const requestSubscription = async (req, res) => {
   }
 };
 
-//Admin ve solicitudes pendientes
+// GET /subscriptions/pending → Ver solicitudes pendientes
 const getPendingSubscriptions = async (req, res) => {
-    try {
-      const subscriptions = await prisma.subscriptions.findMany({
-        where: { state: 'pendiente' },
-        include: {
-          user: true,
-          membership: true
-        }
-      });
-  
-      res.json(subscriptions);
-    } catch (error) {
-      console.error('Error al obtener suscripciones pendientes:', error);
-      res.status(500).json({ error: 'Error interno al obtener solicitudes pendientes' });
-    }
-  };
-  
-  const approveSubscription = async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const updated = await prisma.subscriptions.update({
-        where: { id: Number(id) },
-        data: { state: 'aprobado' }
-      });
-  
-      res.json({ message: 'Suscripción aprobada', subscription: updated });
-    } catch (error) {
-      console.error('Error al aprobar suscripción:', error);
-      res.status(500).json({ error: 'Error interno al aprobar la suscripción' });
-    }
-  };
+  try {
+    const subscriptions = await prisma.subscriptions.findMany({
+      where: { state: 'pendiente' },
+      include: {
+        user: { include: { client: true } },
+        membership: true,
+      },
+    });
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('Error al obtener suscripciones pendientes:', error);
+    res.status(500).json({ error: 'Error interno al obtener solicitudes pendientes' });
+  }
+};
 
-  const rejectSubscription = async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const updated = await prisma.subscriptions.update({
-        where: { id: Number(id) },
-        data: { state: 'rechazado' }
+// PUT /subscriptions/:id/approve → Aprobar una suscripción
+const approveSubscription = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const updated = await prisma.subscriptions.update({
+      where: { id: Number(id) },
+      data: { state: 'aprobado' },
+      include: { user: true },
+    });
+
+    // Crear registro en la tabla `clients` si no existe
+    const existingClient = await prisma.clients.findUnique({
+      where: { user_id: updated.user_id },
+    });
+
+    if (!existingClient) {
+      await prisma.clients.create({
+        data: {
+          user_id: updated.user_id,
+          ci: "—", // Campo por defecto, puede actualizarse luego
+          birthdate: null,
+        },
       });
-  
-      res.json({ message: 'Suscripción rechazada', subscription: updated });
-    } catch (error) {
-      console.error('Error al rechazar suscripción:', error);
-      res.status(500).json({ error: 'Error interno al rechazar la suscripción' });
     }
-  };  
+
+    return res.status(200).json({
+      message: 'Suscripción aprobada correctamente',
+      subscription: updated,
+    });
+  } catch (error) {
+    console.error('Error al aprobar suscripción:', error);
+    return res.status(500).json({ error: 'Error interno al aprobar la suscripción' });
+  }
+};
+
+// PUT /subscriptions/:id/reject → Rechazar una suscripción
+const rejectSubscription = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const updated = await prisma.subscriptions.update({
+      where: { id: Number(id) },
+      data: { state: 'rechazado' }
+    });
+
+    return res.status(200).json({
+      message: 'Suscripción rechazada correctamente',
+      subscription: updated,
+    });
+  } catch (error) {
+    console.error('Error al rechazar suscripción:', error);
+    return res.status(500).json({ error: 'Error interno al rechazar la suscripción' });
+  }
+};
 
 // GET /subscriptions/user/:userId → Obtener suscripción activa o pendiente de un cliente
 const getSubscriptionByUser = async (req, res) => {
@@ -128,10 +151,29 @@ const getSubscriptionByUser = async (req, res) => {
   }
 };
 
-  module.exports = {
-    requestSubscription,
-    getPendingSubscriptions,
-    approveSubscription,
-    rejectSubscription,
-    getSubscriptionByUser
-  };  
+// GET /subscriptions → todas las suscripciones
+const getAllSubscriptions = async (req, res) => {
+  try {
+    const subscriptions = await prisma.subscriptions.findMany({
+      include: {
+        user: {
+          include: { client: true },
+        },
+        membership: true,
+      },
+    });
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('Error al obtener todas las suscripciones:', error);
+    res.status(500).json({ error: 'Error interno al obtener suscripciones' });
+  }
+};
+
+module.exports = {
+  requestSubscription,
+  getPendingSubscriptions,
+  approveSubscription,
+  rejectSubscription,
+  getSubscriptionByUser,
+  getAllSubscriptions,
+};

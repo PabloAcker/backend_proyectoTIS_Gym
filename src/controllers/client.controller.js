@@ -50,30 +50,44 @@ const newClient = await prisma.$transaction(async (tx) => {
   }
 };
 
-// GET /clients → Lista todos los clientes con datos de usuario
+// GET /clients → Lista solo clientes con suscripciones aprobadas
 const getAllClients = async (req, res) => {
   try {
     const clients = await prisma.clients.findMany({
       include: {
-        user: true
+        user: {
+          include: {
+            subscriptions: {
+              where: {
+                state: 'aprobado'
+              }
+            }
+          }
+        }
       }
     });
 
-// Mapea para que el frontend reciba los datos planos
-const formatted = clients.map((c) => ({
-  id: c.id,
-  ci: c.ci,
-  birthdate: c.birthdate,
-  name: c.user?.name || "",
-  lastname: c.user?.lastname || "",
-  email: c.user?.email || "",
-}));
+    // Filtrar solo si hay al menos una suscripción aprobada
+    const filtered = clients.filter(
+      (c) => c.user?.subscriptions?.length > 0
+    );
 
-res.json(formatted);
-} catch (error) {
-console.error("Error al obtener clientes:", error);
-res.status(500).json({ error: "Error al obtener clientes" });
-}
+    // Formatear la respuesta para el frontend
+    const formatted = filtered.map((c) => ({
+      id: c.id,
+      user_id: c.user_id,
+      ci: c.ci,
+      birthdate: c.birthdate,
+      name: c.user?.name || "",
+      lastname: c.user?.lastname || "",
+      email: c.user?.email || "",
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error("Error al obtener clientes:", error);
+    res.status(500).json({ error: "Error al obtener clientes" });
+  }
 };
 
 const updateClient = async (req, res) => {

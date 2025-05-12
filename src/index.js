@@ -32,6 +32,7 @@ app.use('/memberships', membershipRoutes);
 
 // subscriptions
 const subscriptionRoutes = require('./routes/subscription.routes');
+app.use(express.json());
 app.use('/subscriptions', subscriptionRoutes);
 
 // auth
@@ -41,6 +42,5 @@ app.use('/auth', authRoutes);
 // qrs
 const qrRoutes = require('./routes/qr.routes');
 app.use('/qrs', qrRoutes);
-
 
 

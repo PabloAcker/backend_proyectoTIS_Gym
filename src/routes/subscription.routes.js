@@ -5,7 +5,8 @@ const {
   getPendingSubscriptions,
   approveSubscription,
   rejectSubscription,
-  getSubscriptionByUser
+  getSubscriptionByUser,
+  getAllSubscriptions
 } = require('../controllers/subscription.controller');
 
 // Solicitud de membresía
@@ -16,6 +17,8 @@ router.get('/pending', getPendingSubscriptions);
 
 router.get('/user/:userId', getSubscriptionByUser);
 
+// Todas las suscripciones
+router.get('/', getAllSubscriptions);
 // Aprobar / Rechazar
 router.put('/:id/approve', approveSubscription);
 router.put('/:id/reject', rejectSubscription);
