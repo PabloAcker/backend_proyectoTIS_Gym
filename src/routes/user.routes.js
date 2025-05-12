@@ -7,16 +7,18 @@ const {
     updateUser,
     deleteUser,
     getAllUsersRaw,
-    restoreUser
+    restoreUser,
+    getEmployees
   } = require('../controllers/user.controller');
 
 
 router.get('/', getAllUsers);
 router.post('/', createUser);
+router.get('/employees', getEmployees);
+router.get('/all', getAllUsersRaw);
 router.get('/:id', getUserById);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
-router.get('/all', getAllUsersRaw);
 router.put('/:id/restore', restoreUser);
 
 module.exports = router;

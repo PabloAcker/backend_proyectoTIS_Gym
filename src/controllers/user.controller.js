@@ -131,6 +131,22 @@ const restoreUser = async (req, res) => {
     res.status(500).json({ error: 'Error al reactivar usuario' });
   }
 };
+// GET /users/employees → Solo empleados y admins
+const getEmployees = async (req, res) => {
+  try {
+    const employees = await prisma.users.findMany({
+      where: {
+        role: { in: ['empleado', 'admin'] }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    res.json(employees);
+  } catch (error) {
+    console.error("Error al obtener empleados:", error);
+    res.status(500).json({ error: "Error al obtener empleados" });
+  }
+};
 
   module.exports = {
     getAllUsers,
@@ -139,5 +155,6 @@ const restoreUser = async (req, res) => {
     updateUser,
     deleteUser,
     getAllUsersRaw,
-    restoreUser
+    restoreUser,
+    getEmployees
   };  
