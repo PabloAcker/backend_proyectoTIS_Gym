@@ -104,20 +104,25 @@ const updateClient = async (req, res) => {
       return res.status(404).json({ error: "Cliente no encontrado" });
     }
 
-    // Actualizar ambos: cliente y su usuario asociado
-    const updatedClient = await prisma.clients.update({
-      where: { id: Number(id) },
-      data: {
-        ci,
-        birthdate: new Date(birthdate),
-        user: {
-          update: {
-            name,
-            lastname,
-            email,
-          },
+    const updateData = {
+      ci,
+      user: {
+        update: {
+          name,
+          lastname,
+          email,
         },
       },
+    };
+
+    // Validar y agregar birthdate si es válido
+    if (birthdate && !isNaN(new Date(birthdate).getTime())) {
+      updateData.birthdate = new Date(birthdate);
+    }
+
+    const updatedClient = await prisma.clients.update({
+      where: { id: Number(id) },
+      data: updateData,
       include: { user: true },
     });
 
