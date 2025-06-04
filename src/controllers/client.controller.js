@@ -92,7 +92,7 @@ const getAllClients = async (req, res) => {
 
 const updateClient = async (req, res) => {
   const { id } = req.params;
-  const { ci, birthdate, name, lastname, email } = req.body;
+  const { ci, birthdate, name, lastname, password } = req.body;
 
   try {
     const client = await prisma.clients.findUnique({
@@ -104,25 +104,46 @@ const updateClient = async (req, res) => {
       return res.status(404).json({ error: "Cliente no encontrado" });
     }
 
-    const updateData = {
+    const updates = {
       ci,
-      user: {
-        update: {
-          name,
-          lastname,
-          email,
-        },
-      },
+      birthdate: birthdate ? new Date(birthdate) : undefined,
     };
 
-    // Validar y agregar birthdate si es válido
-    if (birthdate && !isNaN(new Date(birthdate).getTime())) {
-      updateData.birthdate = new Date(birthdate);
+    const now = new Date();
+    const lastUpdate = client.user.name_updated_at; // ← CORREGIDO
+    const canUpdateName =
+      !lastUpdate || now.getTime() - new Date(lastUpdate).getTime() > 30 * 24 * 60 * 60 * 1000;
+
+    const userUpdates = {};
+
+    if ((name || lastname) && canUpdateName) {
+      userUpdates.name = name;
+      userUpdates.lastname = lastname;
+      userUpdates.name_updated_at = now; // ← CORREGIDO
+    } else if ((name || lastname) && !canUpdateName) {
+      const nextAvailableDate = new Date(lastUpdate);
+      nextAvailableDate.setDate(nextAvailableDate.getDate() + 30);
+
+      return res.status(403).json({
+        error: "Solo puedes modificar tu nombre o apellido una vez cada 30 días",
+        nextUpdateAllowed: nextAvailableDate.toISOString().split("T")[0],
+      });
     }
 
+    if (password) {
+      const hashed = await bcrypt.hash(password, 10);
+      userUpdates.password = hashed;
+    }
+
+    // Actualizar cliente y usuario
     const updatedClient = await prisma.clients.update({
       where: { id: Number(id) },
-      data: updateData,
+      data: {
+        ...updates,
+        user: {
+          update: userUpdates,
+        },
+      },
       include: { user: true },
     });
 
