@@ -36,7 +36,48 @@ const createBranch = async (req, res) => {
   }
 };
 
+// PUT /branches/:id → Editar sucursal
+const updateBranch = async (req, res) => {
+  const { id } = req.params;
+  const { name, address, services, coordinates } = req.body;
+
+  try {
+    const updatedBranch = await prisma.branches.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        address,
+        services,
+        coordinates,
+      }
+    });
+
+    res.json({ message: "Sucursal actualizada exitosamente", branch: updatedBranch });
+  } catch (error) {
+    console.error("Error al actualizar sucursal:", error);
+    res.status(500).json({ error: "Error al actualizar la sucursal" });
+  }
+};
+
+// DELETE /branches/:id → Eliminar sucursal
+const deleteBranch = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.branches.delete({
+      where: { id: Number(id) }
+    });
+
+    res.json({ message: "Sucursal eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar sucursal:", error);
+    res.status(500).json({ error: "Error al eliminar la sucursal" });
+  }
+};
+
 module.exports = {
   getAllBranches,
-  createBranch
+  createBranch,
+  updateBranch,
+  deleteBranch
 };

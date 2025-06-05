@@ -17,11 +17,6 @@ app.get('/', (req, res) => {
 // Usar rutas de usuarios
 app.use('/users', userRoutes);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
-});
-
 //clients
 const clientRoutes = require('./routes/client.routes');
 app.use('/clients', clientRoutes);
@@ -47,3 +42,7 @@ app.use('/qrs', qrRoutes);
 const branchRoutes = require('./routes/branch.routes');
 app.use('/branches', branchRoutes);
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+});
