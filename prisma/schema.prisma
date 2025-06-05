@@ -8,13 +8,12 @@ datasource db {
 }
 
 model branches {
-  id         Int       @id @default(autoincrement())
-  name       String    @db.VarChar(100)
-  address    String?   @db.Text
-  latitude   Float?    @db.Float
-  longitude  Float?    @db.Float
-  services   String?   @db.Text
-  created_at DateTime? @default(now()) @db.Timestamp(0)
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  address     String?   @db.Text
+  coordinates Json?
+  services    String?   @db.Text
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
 }
 
 model memberships {

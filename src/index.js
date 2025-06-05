@@ -43,4 +43,7 @@ app.use('/auth', authRoutes);
 const qrRoutes = require('./routes/qr.routes');
 app.use('/qrs', qrRoutes);
 
+// branches
+const branchRoutes = require('./routes/branch.routes');
+app.use('/branches', branchRoutes);
 

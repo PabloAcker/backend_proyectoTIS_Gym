@@ -66,27 +66,57 @@ const createUser = async (req, res) => {
     }
   };
 
-  const updateUser = async (req, res) => {
-    const { id } = req.params;
-    const { name, lastname, email, role, status } = req.body;
-  
-    try {
-      const user = await prisma.users.update({
-        where: { id: Number(id) },
-        data: {
-          name,
-          lastname,
-          email,
-          role,
-          status
-        }
-      });
-  
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar usuario' });
+// ✅ Lógica de restricción para modificar nombre y apellido cada 30 días
+const updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, lastname, email, role, status, password } = req.body;
+
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-  };
+
+    const now = new Date();
+    const lastUpdate = user.name_updated_at;
+    const canUpdateName =
+      !lastUpdate || now.getTime() - new Date(lastUpdate).getTime() > 30 * 24 * 60 * 60 * 1000;
+
+    const updates = {
+      email,
+      role,
+      status
+    };
+
+    if ((name || lastname) && canUpdateName) {
+      updates.name = name;
+      updates.lastname = lastname;
+      updates.name_updated_at = now;
+    } else if ((name || lastname) && !canUpdateName) {
+      return res.status(403).json({
+        error: "Solo puedes modificar tu nombre o apellido una vez cada 30 días",
+      });
+    }
+
+    if (password) {
+      const hashed = await bcrypt.hash(password, 10);
+      updates.password = hashed;
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { id: Number(id) },
+      data: updates
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+};
 
   const deleteUser = async (req, res) => {
     const { id } = req.params;
