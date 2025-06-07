@@ -42,6 +42,10 @@ app.use('/qrs', qrRoutes);
 const branchRoutes = require('./routes/branch.routes');
 app.use('/branches', branchRoutes);
 
+// dashboard
+const dashboardRoutes = require('./routes/dashboard.routes');
+app.use('/dashboard', dashboardRoutes);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
