@@ -46,6 +46,13 @@ app.use('/branches', branchRoutes);
 const dashboardRoutes = require('./routes/dashboard.routes');
 app.use('/dashboard', dashboardRoutes);
 
+// RFID access
+const accessRoutes = require('./routes/access.routes');
+app.use('/access', accessRoutes);
+
+const rfidLogRoutes = require('./routes/rfidLog.routes');
+app.use('/rfid-logs', rfidLogRoutes);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);

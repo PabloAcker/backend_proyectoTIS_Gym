@@ -34,8 +34,11 @@ model subscriptions {
   state         SubscriptionState? @default(pendiente)
   start_date    DateTime           @db.Date
   end_date      DateTime           @db.Date
+
   user          users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_ibfk_1")
   membership    memberships        @relation(fields: [membership_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_ibfk_2")
+  rfid_access   rfid_access[]
+  rfid_logs     rfid_logs[]        // ← Nuevo
 
   @@index([membership_id], map: "membership_id")
   @@index([user_id], map: "user_id")
@@ -55,14 +58,28 @@ model reports {
 }
 
 model rfid_access {
-  id         Int       @id @default(autoincrement())
-  rfid_code  String    @unique(map: "rfid_code") @db.VarChar(100)
-  entry_date DateTime? @db.Date
-  exit_date  DateTime? @db.Date
-  user_id    Int?
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "rfid_access_ibfk_1")
+  id              Int             @id @default(autoincrement())
+  rfid_code       String          @unique @db.VarChar(100)
+  subscription_id Int
+  subscription    subscriptions   @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
 
-  @@index([user_id], map: "user_id")
+  rfid_logs       rfid_logs[]     // ← Relación con logs
+
+  @@index([subscription_id])
+}
+
+model rfid_logs {
+  id              Int       @id @default(autoincrement())
+  rfid_access_id  Int
+  subscription_id Int
+  entry_date      DateTime? @db.DateTime(0)
+  exit_date       DateTime? @db.DateTime(0)
+
+  rfid_access     rfid_access    @relation(fields: [rfid_access_id], references: [id], onDelete: Cascade)
+  subscription    subscriptions  @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  @@index([rfid_access_id])
+  @@index([subscription_id])
 }
 
 model users {
@@ -76,8 +93,8 @@ model users {
   created_at      DateTime?       @default(now()) @db.Timestamp(0)
   updated_at      DateTime?       @default(now()) @db.Timestamp(0)
   name_updated_at DateTime?       @db.DateTime(0)
+
   client          clients?        @relation("UserClient")
-  rfid_access     rfid_access[]
   subscriptions   subscriptions[]
 }
 
@@ -86,6 +103,7 @@ model clients {
   user_id   Int?      @unique(map: "user_id")
   ci        String    @db.VarChar(20)
   birthdate DateTime? @db.Date
+
   user      users?    @relation("UserClient", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "clients_ibfk_1")
 }
 
