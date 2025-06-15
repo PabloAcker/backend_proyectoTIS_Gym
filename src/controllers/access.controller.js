@@ -1,6 +1,6 @@
 const prisma = require('../prisma/client');
 
-// POST /access → Registrar un nuevo acceso (entrada)
+// POST /access → Alternar entrada/salida automáticamente
 const registerAccess = async (req, res) => {
   const { rfid_code } = req.body;
 
@@ -9,6 +9,7 @@ const registerAccess = async (req, res) => {
   }
 
   try {
+    // Verificar si la tarjeta está vinculada a una suscripción válida
     const access = await prisma.rfid_access.findFirst({
       where: {
         rfid_code,
@@ -32,27 +33,50 @@ const registerAccess = async (req, res) => {
       return res.status(403).json({ error: 'Acceso denegado. Tarjeta inválida o suscripción inactiva' });
     }
 
-    // Crear un nuevo registro en rfid_logs
-    const log = await prisma.rfid_logs.create({
-      data: {
+    // Buscar último log sin salida
+    const lastLog = await prisma.rfid_logs.findFirst({
+      where: {
         rfid_access_id: access.id,
-        subscription_id: access.subscription.id,
-        entry_date: new Date()
-      }
+        exit_date: null
+      },
+      orderBy: { entry_date: 'desc' }
     });
 
+    let responseMessage = '';
+    let logData;
+
+    if (!lastLog) {
+      // Si no hay log sin salida → registrar entrada
+      logData = await prisma.rfid_logs.create({
+        data: {
+          rfid_access_id: access.id,
+          subscription_id: access.subscription_id,
+          entry_date: new Date()
+        }
+      });
+      responseMessage = 'Entrada registrada correctamente';
+    } else {
+      // Si hay log sin salida → registrar salida
+      logData = await prisma.rfid_logs.update({
+        where: { id: lastLog.id },
+        data: { exit_date: new Date() }
+      });
+      responseMessage = 'Salida registrada correctamente';
+    }
+
     res.json({
-      message: 'Acceso registrado correctamente',
-      log,
+      message: responseMessage,
+      log: logData,
       cliente: {
         nombre: access.subscription.user.name,
         apellido: access.subscription.user.lastname,
         plan: access.subscription.membership.name
       }
     });
+
   } catch (error) {
-    console.error('Error al registrar acceso:', error);
-    res.status(500).json({ error: 'Error interno al registrar el acceso' });
+    console.error('Error al registrar acceso/salida:', error);
+    res.status(500).json({ error: 'Error interno al registrar entrada/salida' });
   }
 };
 

@@ -53,6 +53,10 @@ app.use('/access', accessRoutes);
 const rfidLogRoutes = require('./routes/rfidLog.routes');
 app.use('/rfid-logs', rfidLogRoutes);
 
+//chatbot
+const chatbotRoutes = require('./routes/chatbot.routes');
+app.use('/chatbot', chatbotRoutes);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
