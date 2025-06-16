@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { generarDieta } = require("../controllers/chatbot.controller");
+const { generarIA } = require("../controllers/chatbot.controller");
 
-router.post("/", generarDieta);
+router.post("/", generarIA);
 
 module.exports = router;
