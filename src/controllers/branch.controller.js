@@ -13,7 +13,7 @@ const getAllBranches = async (req, res) => {
 
 // POST /branches → Crear una nueva sucursal
 const createBranch = async (req, res) => {
-  const { name, address, services, coordinates } = req.body;
+  const { name, address, services, coordinates, image } = req.body;
 
   if (!name || !coordinates?.lat || !coordinates?.lng) {
     return res.status(400).json({ error: "Nombre y coordenadas son obligatorias" });
@@ -26,6 +26,7 @@ const createBranch = async (req, res) => {
         address,
         services,
         coordinates,
+        image, // ahora también acepta imagen
       }
     });
 
@@ -39,7 +40,7 @@ const createBranch = async (req, res) => {
 // PUT /branches/:id → Editar sucursal
 const updateBranch = async (req, res) => {
   const { id } = req.params;
-  const { name, address, services, coordinates } = req.body;
+  const { name, address, services, coordinates, image } = req.body;
 
   try {
     const updatedBranch = await prisma.branches.update({
@@ -49,6 +50,7 @@ const updateBranch = async (req, res) => {
         address,
         services,
         coordinates,
+        image, // permite actualizar imagen
       }
     });
 
