@@ -112,6 +112,7 @@ enum SubscriptionState {
   pendiente
   aprobado
   rechazado
+  vencido
 }
 
 enum users_role {

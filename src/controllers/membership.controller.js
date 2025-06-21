@@ -28,18 +28,75 @@ const createMembership = async (req, res) => {
 
 const getAllMemberships = async (req, res) => {
   try {
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+
     const memberships = await prisma.memberships.findMany({
-      where: {
-        status: true // si quieres filtrar solo activos
-      }
+      where: { status: true }
     });
 
-    res.json(memberships);
+    // Si no se pasa userId, retornar normalmente
+    if (!userId) return res.json(memberships);
+
+    // Traer todas las suscripciones del usuario ordenadas por fecha
+    const userSubscriptions = await prisma.subscriptions.findMany({
+      where: { user_id: userId },
+      orderBy: { start_date: 'asc' },
+      include: { membership: true },
+    });
+
+    // Agrupar por plan
+    const grouped = {};
+    for (const sub of userSubscriptions) {
+      const key = sub.membership_id;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(sub);
+    }
+
+    const discountedMemberships = memberships.map((m) => {
+      let discounted_price = null;
+
+      const subs = grouped[m.id] || [];
+
+      // Filtrar suscripciones consecutivas
+      if (m.name.toLowerCase().includes("mensual") && subs.length >= 3) {
+        const last3 = subs.slice(-3);
+        if (
+          isConsecutive(last3[0].end_date, last3[1].start_date) &&
+          isConsecutive(last3[1].end_date, last3[2].start_date)
+        ) {
+          discounted_price = parseFloat((m.price * 0.85).toFixed(2)); // 15%
+        }
+      } else if (m.name.toLowerCase().includes("trimestral") && subs.length >= 2) {
+        const last2 = subs.slice(-2);
+        if (isConsecutive(last2[0].end_date, last2[1].start_date)) {
+          discounted_price = parseFloat((m.price * 0.80).toFixed(2)); // 20%
+        }
+      } else if (subs.length > 0) {
+        const lastSub = subs[subs.length - 1];
+        if (lastSub.membership.name.toLowerCase().includes("anual")) {
+          discounted_price = parseFloat((m.price * 0.75).toFixed(2)); // 25%
+        }
+      }
+
+      return {
+        ...m,
+        discounted_price,
+      };
+    });
+
+    res.json(discountedMemberships);
   } catch (error) {
-    console.error('Error al obtener las membresías:', error);
-    res.status(500).json({ error: 'Error interno al obtener las membresías' });
+    console.error("Error al obtener las membresías con descuentos:", error);
+    res.status(500).json({ error: "Error interno al obtener las membresías" });
   }
 };
+
+// Función auxiliar
+function isConsecutive(prevEnd, nextStart) {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const diff = new Date(nextStart).getTime() - new Date(prevEnd).getTime();
+  return diff >= 0 && diff <= oneDayMs;
+}
 
   const deleteMembership = async (req, res) => {
     const { id } = req.params;
