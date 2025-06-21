@@ -108,7 +108,7 @@ const approveSubscription = async (req, res) => {
       include: { user: true },
     });
 
-    // Crear registro en la tabla `clients` si no existe
+    // Crear registro en la tabla clients si no existe
     const existingClient = await prisma.clients.findUnique({
       where: { user_id: updated.user_id },
     });

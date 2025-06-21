@@ -124,19 +124,54 @@ function isConsecutive(prevEnd, nextStart) {
 
   const getMembershipById = async (req, res) => {
     const { id } = req.params;
-  
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+
     try {
       const membership = await prisma.memberships.findUnique({
-        where: {
-          id: Number(id)
-        }
+        where: { id: Number(id) }
       });
-  
+
       if (!membership) {
         return res.status(404).json({ error: 'Membresía no encontrada' });
       }
-  
-      res.json(membership);
+
+      // Si no se pasa userId, devolver sin descuento
+      if (!userId) return res.json(membership);
+
+      // Traer las suscripciones del usuario para este plan
+      const subscriptions = await prisma.subscriptions.findMany({
+        where: { user_id: userId, membership_id: Number(id) },
+        orderBy: { start_date: 'asc' },
+        include: { membership: true }
+      });
+
+      let discounted_price = null;
+
+      if (membership.name.toLowerCase().includes("mensual") && subscriptions.length >= 3) {
+        const last3 = subscriptions.slice(-3);
+        if (
+          isConsecutive(last3[0].end_date, last3[1].start_date) &&
+          isConsecutive(last3[1].end_date, last3[2].start_date)
+        ) {
+          discounted_price = parseFloat((membership.price * 0.85).toFixed(2));
+        }
+      } else if (membership.name.toLowerCase().includes("trimestral") && subscriptions.length >= 2) {
+        const last2 = subscriptions.slice(-2);
+        if (isConsecutive(last2[0].end_date, last2[1].start_date)) {
+          discounted_price = parseFloat((membership.price * 0.80).toFixed(2));
+        }
+      } else if (subscriptions.length > 0) {
+        const lastSub = subscriptions[subscriptions.length - 1];
+        if (lastSub.membership.name.toLowerCase().includes("anual")) {
+          discounted_price = parseFloat((membership.price * 0.75).toFixed(2));
+        }
+      }
+
+      res.json({
+        ...membership,
+        discounted_price
+      });
+
     } catch (error) {
       console.error('Error al obtener la membresía:', error);
       res.status(500).json({ error: 'Error interno al obtener la membresía' });
