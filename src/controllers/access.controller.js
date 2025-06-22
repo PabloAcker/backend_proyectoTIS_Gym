@@ -45,8 +45,33 @@ const registerAccess = async (req, res) => {
     let responseMessage = '';
     let logData;
 
+    const isMensual = access.subscription.membership.name.toLowerCase().includes("mensual");
+
+    // Si no hay log sin salida → está intentando ingresar
+    if (!lastLog && isMensual) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      const entryToday = await prisma.rfid_logs.findFirst({
+        where: {
+          rfid_access_id: access.id,
+          entry_date: {
+            gte: startOfToday,
+            lte: endOfToday
+          }
+        }
+      });
+
+      if (entryToday) {
+        return res.status(403).json({ error: "Ya ingresaste hoy. El plan mensual solo permite una entrada diaria." });
+      }
+    }
+
     if (!lastLog) {
-      // Si no hay log sin salida → registrar entrada
+      // No hay log sin salida → registrar entrada
       logData = await prisma.rfid_logs.create({
         data: {
           rfid_access_id: access.id,
@@ -56,7 +81,7 @@ const registerAccess = async (req, res) => {
       });
       responseMessage = 'Entrada registrada correctamente';
     } else {
-      // Si hay log sin salida → registrar salida
+      // Hay log sin salida → registrar salida
       logData = await prisma.rfid_logs.update({
         where: { id: lastLog.id },
         data: { exit_date: new Date() }
