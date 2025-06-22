@@ -3,7 +3,7 @@ const { addMonthsToDate } = require('../utils/date-utils');
 
 const requestSubscription = async (req, res) => {
   try {
-    const { userId, membershipId, proofFile } = req.body;
+    const { userId, membershipId, proofFile, discount } = req.body;
 
     if (!userId || !membershipId || !proofFile) {
       return res.status(400).json({ error: 'Faltan datos obligatorios: userId, membershipId y proofFile' });
@@ -11,7 +11,7 @@ const requestSubscription = async (req, res) => {
 
     const now = new Date();
 
-    // ✅ Paso 1: Actualizar todas las suscripciones 'aprobado' vencidas
+    // ✅ Paso 1: Marcar suscripciones vencidas del usuario
     const subsToCheck = await prisma.subscriptions.findMany({
       where: {
         user_id: Number(userId),
@@ -28,7 +28,7 @@ const requestSubscription = async (req, res) => {
       }
     }
 
-    // ✅ Paso 2: Verificar si queda alguna suscripción activa o pendiente aún válida
+    // ✅ Paso 2: Verificar si ya tiene otra suscripción activa o pendiente
     const stillActive = await prisma.subscriptions.findFirst({
       where: {
         user_id: Number(userId),
@@ -40,7 +40,7 @@ const requestSubscription = async (req, res) => {
       return res.status(400).json({ error: 'Ya tienes una suscripción activa o pendiente.' });
     }
 
-    // Paso 3: Obtener datos del plan de membresía
+    // ✅ Paso 3: Obtener la membresía
     const membership = await prisma.memberships.findUnique({
       where: { id: Number(membershipId) }
     });
@@ -57,7 +57,17 @@ const requestSubscription = async (req, res) => {
     const startDate = new Date();
     const endDate = addMonthsToDate(startDate, months);
 
-    // Paso 4: Crear nueva suscripción
+    // ✅ Paso 4: Validar y calcular descuento si se envió
+    let discountValue = null;
+    if (discount !== undefined && discount !== null) {
+      const parsedDiscount = parseFloat(discount);
+      if (isNaN(parsedDiscount) || parsedDiscount <= 0 || parsedDiscount > membership.price) {
+        return res.status(400).json({ error: 'El valor del descuento no es válido' });
+      }
+      discountValue = parsedDiscount;
+    }
+
+    // ✅ Paso 5: Crear la suscripción con el descuento
     const subscription = await prisma.subscriptions.create({
       data: {
         user_id: userId,
@@ -65,7 +75,8 @@ const requestSubscription = async (req, res) => {
         proof_file: proofFile,
         start_date: startDate,
         end_date: endDate,
-        state: 'pendiente'
+        state: 'pendiente',
+        discount: discountValue ?? null
       }
     });
 
@@ -182,6 +193,9 @@ const getSubscriptionByUser = async (req, res) => {
       subscription = await prisma.subscriptions.update({
         where: { id: subscription.id },
         data: { state: 'vencido' },
+        include: {
+          membership: true
+        }
       });
     }
 
