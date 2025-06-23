@@ -3,7 +3,7 @@ const { addMonthsToDate } = require('../utils/date-utils');
 
 const requestSubscription = async (req, res) => {
   try {
-    const { userId, membershipId, proofFile, discount } = req.body;
+    const { userId, membershipId, proofFile, finalPrice } = req.body;
 
     if (!userId || !membershipId || !proofFile) {
       return res.status(400).json({ error: 'Faltan datos obligatorios: userId, membershipId y proofFile' });
@@ -11,7 +11,7 @@ const requestSubscription = async (req, res) => {
 
     const now = new Date();
 
-    // ✅ Paso 1: Marcar suscripciones vencidas del usuario
+    // Paso 1: Marcar vencidas
     const subsToCheck = await prisma.subscriptions.findMany({
       where: {
         user_id: Number(userId),
@@ -28,7 +28,7 @@ const requestSubscription = async (req, res) => {
       }
     }
 
-    // ✅ Paso 2: Verificar si ya tiene otra suscripción activa o pendiente
+    // Paso 2: Verificar si ya tiene una activa/pending
     const stillActive = await prisma.subscriptions.findFirst({
       where: {
         user_id: Number(userId),
@@ -40,34 +40,37 @@ const requestSubscription = async (req, res) => {
       return res.status(400).json({ error: 'Ya tienes una suscripción activa o pendiente.' });
     }
 
-    // ✅ Paso 3: Obtener la membresía
+    // Paso 3: Obtener membresía
     const membership = await prisma.memberships.findUnique({
       where: { id: Number(membershipId) }
     });
 
     if (!membership) {
-      return res.status(404).json({ error: 'Plan de membresía no encontrado' });
+      return res.status(404).json({ error: 'Membresía no encontrada' });
     }
 
-    const months = parseInt(membership.duration); // Ej: "1 mes" → 1
+    const months = parseInt(membership.duration);
     if (isNaN(months)) {
-      return res.status(400).json({ error: 'Duración de la membresía inválida (debe ser número de meses)' });
+      return res.status(400).json({ error: 'Duración de la membresía inválida' });
     }
 
     const startDate = new Date();
     const endDate = addMonthsToDate(startDate, months);
 
-    // ✅ Paso 4: Validar y calcular descuento si se envió
-    let discountValue = null;
-    if (discount !== undefined && discount !== null) {
-      const parsedDiscount = parseFloat(discount);
-      if (isNaN(parsedDiscount) || parsedDiscount <= 0 || parsedDiscount > membership.price) {
-        return res.status(400).json({ error: 'El valor del descuento no es válido' });
+    // Paso 4: Validar finalPrice
+    let parsedFinalPrice = null;
+    if (finalPrice !== undefined && finalPrice !== null) {
+      parsedFinalPrice = parseFloat(finalPrice);
+      if (
+        isNaN(parsedFinalPrice) ||
+        parsedFinalPrice <= 0 ||
+        parsedFinalPrice > membership.price
+      ) {
+        return res.status(400).json({ error: 'El precio final enviado no es válido' });
       }
-      discountValue = parsedDiscount;
     }
 
-    // ✅ Paso 5: Crear la suscripción con el descuento
+    // Paso 5: Crear suscripción
     const subscription = await prisma.subscriptions.create({
       data: {
         user_id: userId,
@@ -75,8 +78,8 @@ const requestSubscription = async (req, res) => {
         proof_file: proofFile,
         start_date: startDate,
         end_date: endDate,
+        final_price: parsedFinalPrice,
         state: 'pendiente',
-        discount: discountValue ?? null
       }
     });
 
@@ -263,6 +266,7 @@ const getUserSubscriptionHistory = async (req, res) => {
         state: true,
         start_date: true,
         end_date: true,
+        final_price: true, // ← agregado aquí
         membership: {
           select: {
             id: true,
