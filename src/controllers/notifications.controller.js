@@ -93,23 +93,16 @@ const getUserNotifications = async (req, res) => {
     }
 
     // -------- ANUAL --------
-    let anualAlreadyGranted = false;
-    for (let i = 0; i < subscriptions.length - 1; i++) {
-      const curr = subscriptions[i];
-      const next = subscriptions[i + 1];
+    const hasVencidaAnual = subscriptions.find(
+      (sub) => sub.membership.duration.toLowerCase() === '12 meses'
+    );
 
-      if (
-        curr.membership.duration.toLowerCase() === '12 meses' &&
-        areDatesContiguous(curr, next) &&
-        !anualAlreadyGranted
-      ) {
-        incentives.push({
-          type: 'anual',
-          message: '🎉 ¡Por haber adquirido un plan anual, obtienes 25% de descuento en tu próxima suscripción!',
-          discount: 25
-        });
-        anualAlreadyGranted = true;
-      }
+    if (hasVencidaAnual) {
+      incentives.push({
+        type: 'anual',
+        message: '🎉 ¡Por haber adquirido un plan anual, obtienes 25% de descuento en tu próxima suscripción!',
+        discount: 25
+      });
     }
 
     return res.json(incentives);
